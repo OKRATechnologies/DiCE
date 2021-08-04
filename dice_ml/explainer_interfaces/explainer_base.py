@@ -179,6 +179,7 @@ class ExplainerBase(ABC):
                                  desired_class="opposite", desired_range=None, permitted_range=None,
                                  features_to_vary="all", stopping_threshold=0.5,
                                  posthoc_sparsity_param=0.1, posthoc_sparsity_algorithm="linear",
+                                 atol = 1e-8,
                                  **kwargs):
         """ Estimate local feature importance scores for the given inputs.
 
@@ -217,6 +218,7 @@ class ExplainerBase(ABC):
             stopping_threshold=stopping_threshold,
             posthoc_sparsity_param=posthoc_sparsity_param,
             posthoc_sparsity_algorithm=posthoc_sparsity_algorithm,
+            atol = atol,
             **kwargs)
         return importances
 
@@ -225,6 +227,7 @@ class ExplainerBase(ABC):
                                   desired_class="opposite", desired_range=None, permitted_range=None,
                                   features_to_vary="all", stopping_threshold=0.5,
                                   posthoc_sparsity_param=0.1, posthoc_sparsity_algorithm="linear",
+                                  atol = 1e-8,
                                   **kwargs):
         """ Estimate global feature importance scores for the given inputs.
 
@@ -243,7 +246,7 @@ class ExplainerBase(ABC):
                   the list of counterfactuals per input, local feature importances per
                   input, and the global feature importance summarized over all inputs.
         """
-        if len(query_instances) < 10:
+        if query_instances is not None and len(query_instances) < 10:
             raise UserConfigValidationException("The number of query instances should be greater than or equal to 10")
         if cf_examples_list is not None:
             if any([len(cf_examples.final_cfs_df) < 10 for cf_examples in cf_examples_list]):
@@ -267,6 +270,7 @@ class ExplainerBase(ABC):
             stopping_threshold=stopping_threshold,
             posthoc_sparsity_param=posthoc_sparsity_param,
             posthoc_sparsity_algorithm=posthoc_sparsity_algorithm,
+            atol = atol,
             **kwargs)
         return importances
 
@@ -274,7 +278,8 @@ class ExplainerBase(ABC):
                            total_CFs=10, local_importance=True, global_importance=True,
                            desired_class="opposite", desired_range=None,
                            permitted_range=None, features_to_vary="all", stopping_threshold=0.5,
-                           posthoc_sparsity_param=0.1, posthoc_sparsity_algorithm="linear", **kwargs):
+                           posthoc_sparsity_param=0.1, posthoc_sparsity_algorithm="linear", 
+                           atol = 1e-8, **kwargs):
         """ Estimate feature importance scores for the given inputs.
 
         :param query_instances: A list of inputs for which to compute the
@@ -317,6 +322,7 @@ class ExplainerBase(ABC):
                 for col in allcols:
                     local_importances[i][col] = 0
 
+        overall_num_cfs = 0
         # Summarizing the found counterfactuals
         for i in range(len(cf_examples_list)):
             cf_examples = cf_examples_list[i]
@@ -330,9 +336,11 @@ class ExplainerBase(ABC):
             if df is None:
                 continue
 
+            per_query_point_cfs = 0
             for index, row in df.iterrows():
+                per_query_point_cfs += 1
                 for col in self.data_interface.continuous_feature_names:
-                    if not np.isclose(org_instance[col].iat[0], row[col]):
+                    if not np.isclose(org_instance[col].iat[0], row[col], atol = atol):
                         if summary_importance is not None:
                             summary_importance[col] += 1
                         if local_importances is not None:
@@ -346,10 +354,16 @@ class ExplainerBase(ABC):
 
             if local_importances is not None:
                 for col in allcols:
-                    local_importances[i][col] /= (cf_examples_list[0].final_cfs_df.shape[0])
+                    if per_query_point_cfs > 0:
+                        local_importances[i][col] /= per_query_point_cfs
+
+            overall_num_cfs += per_query_point_cfs
+
         if summary_importance is not None:
             for col in allcols:
-                summary_importance[col] /= (cf_examples_list[0].final_cfs_df.shape[0]*len(cf_examples_list))
+                if overall_num_cfs > 0:
+                    summary_importance[col] /= overall_num_cfs
+
         return CounterfactualExplanations(
             cf_examples_list,
             local_importance=local_importances,

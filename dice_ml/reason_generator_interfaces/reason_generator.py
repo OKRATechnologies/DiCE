@@ -57,12 +57,21 @@ class ReasonGeneratorBase:
             results1 += [self.format(vals[key1], tipo)]
             
         return results0, results1
+
+    def order_top_features(self, top_features_per_instance: Dict, n: int):
+        sorted_dict = dict(sorted(top_features_per_instance.items(), key = lambda item: item[1]))
+        keys = list(sorted_dict.keys())[:n]
+        values = list(sorted_dict.values())[:n]
+        return keys, values
+
     
-    def generate_reasons(self, cf_examples_list: List, top_features_per_instance: List[Dict], result0: str = 'result0', result1: str = 'result1',
+    def generate_reasons(self, cf_examples_list: List, top_features_per_instance_list: List[Dict], n_important: int = 10, result0: str = 'result0', result1: str = 'result1',
                         target0: str = 'target0', target1: str = 'target1', verbose = True):
         for i, cf_example in enumerate(cf_examples_list):
             if verbose:
                 print(f'For query number {i}:')
+            keys_important, _ = self.order_top_features(top_features_per_instance_list[i], n_important)
+            print(f'Most important features: {keys_important}')
             changes_list = self.check_changes(cf_example)
             for j, dictionary in enumerate(changes_list):
                 if verbose:
