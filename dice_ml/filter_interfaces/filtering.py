@@ -118,6 +118,9 @@ class FilterChanges:
 
     def filtered_cf_list(self, cf_examples_list):
 
+        #if cf_example.final_cfs_df_sparse is not None:
+        #    new_cfs = cf_example.final_cfs_df_sparse
+
         #here it assumes you have the same number of CFs for each example
         total_CFs = cf_examples_list[0].final_cfs_df.shape[0] 
         
@@ -149,6 +152,9 @@ class FilterChanges:
         for i, _ in enumerate(lista):
             cf_examples_list[i].final_cfs_df = cf_examples_list[i].final_cfs_df.truncate(after = min_number_ok_cfs-1, axis = 0)
         
+            #NOTE:have to understand better what is this sparse thing
+            cf_examples_list[i].final_cfs_df_sparse = cf_examples_list[i].final_cfs_df
+
         return  cf_examples_list
 
     def changed_from_counterfactual(self, cf_examples_list):

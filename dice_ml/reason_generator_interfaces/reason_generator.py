@@ -7,6 +7,20 @@ import numpy as np
 from typing import List, Dict
 
 
+
+# from https://stackoverflow.com/questions/8924173/how-do-i-print-bold-text-in-python
+class color:
+   PURPLE = '\033[95m'
+   CYAN = '\033[96m'
+   DARKCYAN = '\033[36m'
+   BLUE = '\033[94m'
+   GREEN = '\033[92m'
+   YELLOW = '\033[93m'
+   RED = '\033[91m'
+   BOLD = '\033[1m'
+   UNDERLINE = '\033[4m'
+   END = '\033[0m'
+
 class ReasonGeneratorBase:
     def __init__(self, continuous_features: List[str], categorical_features: List[str], outcome: str, model_type: str):
         self.model_type = model_type
@@ -73,13 +87,19 @@ class ReasonGeneratorBase:
                         target0: str = 'target0', target1: str = 'target1', verbose = True):
         for i, cf_example in enumerate(cf_examples_list):
             if verbose:
-                print(f'For query number {i}:')
+                print(color.RED + color.BOLD + f'For query number {i}:' + color.END, '\n')
             keys_important, _ = self.order_top_features(top_features_per_instance_list[i], threshold_importance)
-            print(f'Most important features with threshold of {threshold_importance}: {keys_important}')
+            if len(keys_important)>0:
+                print(f'Most important features with threshold of {threshold_importance}: {keys_important}')
+            else:
+                print(f'No feature with threshold of at least {threshold_importance}')
+
+            print('\n')
+
             changes_list = self.check_changes(cf_example)
             for j, dictionary in enumerate(changes_list):
                 if verbose:
-                    print(f'Counterfactual number {j} of query {i}:')
+                    print(color.BOLD + f'Counterfactual number {j} of query {i}:' + color.END)
                 features = list(dictionary.keys())
                 features.remove(self.outcome)
                 feature_types = self.get_types(features)
@@ -117,10 +137,10 @@ class ReasonGenerator(ReasonGeneratorBase):
     def check_changes(self, cf_example, atol = 1e-8) -> List:
         org_instance = cf_example.test_instance_df
         
-        if cf_example.final_cfs_df_sparse is not None:
-            new_cfs = cf_example.final_cfs_df_sparse
-        else:
-            new_cfs = cf_example.final_cfs_df
+        #if cf_example.final_cfs_df_sparse is not None:
+        #    new_cfs = cf_example.final_cfs_df_sparse
+        #else:
+        new_cfs = cf_example.final_cfs_df
             
         new_cfs_changes = []
         
