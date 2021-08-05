@@ -28,6 +28,8 @@ def get_behaviour(tipo: str, result0: str, result1: str) -> str:
             behaviour = 'increases'
         elif float(result1)-float(result0)<0:
             behaviour = 'decreases'
+        else:
+            behaviour = 'stays'
     return behaviour
 
 def custom_behaviour_template(tipo: str, feature: str, result0: str, result1: str) -> str:

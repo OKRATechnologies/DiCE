@@ -110,7 +110,7 @@ class ReasonGenerator(ReasonGeneratorBase):
                          outcome = exp.data_interface.outcome_name,
                          model_type = exp.model.model_type)
         
-    def check_changes(self, cf_example, atol = 0.1) -> List:
+    def check_changes(self, cf_example, atol = 1e-8) -> List:
         org_instance = cf_example.test_instance_df
         
         if cf_example.final_cfs_df_sparse is not None:
@@ -120,11 +120,14 @@ class ReasonGenerator(ReasonGeneratorBase):
             
         new_cfs_changes = []
         
+        i = 0
+
         for index, row in new_cfs.iterrows():
             
             new_cfs_changes += [{self.outcome: {'target0': org_instance[self.outcome].iloc[0], 'target1': row[self.outcome]}}]
             
             for col in self.features:
+
                 old = org_instance[col].iloc[0]
                 new = row[col]
                 
@@ -137,6 +140,8 @@ class ReasonGenerator(ReasonGeneratorBase):
                         add = True
                         
                 if add:
-                    new_cfs_changes[index][col] = {'result0': old, 'result1': new}
+                    new_cfs_changes[i][col] = {'result0': old, 'result1': new}
                 
+            i += 1
+
         return new_cfs_changes
