@@ -41,7 +41,7 @@ class ReasonGeneratorBase:
     
     def format(self, stringa: str, tipo: str):
         if tipo == self.categorical:
-            result = f'{stringa:0.f}'
+            result = f'{int(float(stringa)):.0f}'
         elif tipo == self.continuous:
             result =  f'{stringa:.3f}'
         return result
