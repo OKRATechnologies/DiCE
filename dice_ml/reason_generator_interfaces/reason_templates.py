@@ -1,5 +1,6 @@
 from typing import List
 
+from .colors import color
 
 def generic_type_template(tipo: str, name: str, behaviour: str, result0: str, result1: str) -> str:
     """Template for feature behaviour reason generated from DICE
@@ -61,7 +62,7 @@ def custom_model_template(model_type: str, target: str, result0: str, result1: s
 
     phrase = generic_type_template(tipo =  tipo, name = target, behaviour = behaviour, result0 = result0, result1 = result1)
 
-    result = f" the output of the model {phrase}."
+    result = color.BLUE + f" the output of the model {phrase}." + color.END
 
     return result
 

@@ -6,20 +6,7 @@ import numpy as np
 
 from typing import List, Dict
 
-
-
-# from https://stackoverflow.com/questions/8924173/how-do-i-print-bold-text-in-python
-class color:
-   PURPLE = '\033[95m'
-   CYAN = '\033[96m'
-   DARKCYAN = '\033[36m'
-   BLUE = '\033[94m'
-   GREEN = '\033[92m'
-   YELLOW = '\033[93m'
-   RED = '\033[91m'
-   BOLD = '\033[1m'
-   UNDERLINE = '\033[4m'
-   END = '\033[0m'
+from .colors import color
 
 class ReasonGeneratorBase:
     def __init__(self, continuous_features: List[str], categorical_features: List[str], outcome: str, model_type: str):
@@ -60,15 +47,19 @@ class ReasonGeneratorBase:
             result =  f'{stringa:.3f}'
         return result
 
-    def get_results_lists(self, dictionary: Dict, key0: str = 'result0', key1: str = 'result1'):
+    def get_results_lists(self, dictionary: Dict, key0: str = 'result0', key1: str = 'result1', features_to_include: List = None):
+        if features_to_include is None:
+            features_to_include = self.features
+
         results0 = []
         results1 = []
         dictionary_copy = dictionary.copy()
         del dictionary_copy[self.outcome]
         for feat, vals in dictionary_copy.items():
-            tipo = self.get_type(feat)
-            results0 += [self.format(vals[key0], tipo)]
-            results1 += [self.format(vals[key1], tipo)]
+            if feat in features_to_include:
+                tipo = self.get_type(feat)
+                results0 += [self.format(vals[key0], tipo)]
+                results1 += [self.format(vals[key1], tipo)]
             
         return results0, results1
 
@@ -100,17 +91,21 @@ class ReasonGeneratorBase:
             for j, dictionary in enumerate(changes_list):
                 if verbose:
                     print(color.BOLD + f'Counterfactual number {j} of query {i}:' + color.END)
-                features = list(dictionary.keys())
-                features.remove(self.outcome)
+                #If no local importance above threshold, just show all of the changes
+                features = list(set(list(dictionary.keys()) ) & set(keys_important)) if len(keys_important)>0 else list(dictionary.keys())
+
+                if self.outcome in features:
+                    features.remove(self.outcome)
+                    
                 feature_types = self.get_types(features)
-                results0, results1 = self.get_results_lists(dictionary, key0 = result0, key1 = result1)
+                results0, results1 = self.get_results_lists(dictionary, key0 = result0, key1 = result1, features_to_include = features)
                 
                 target0str = self.access_dict(dictionary, self.outcome, target0)
                 target1str = self.access_dict(dictionary, self.outcome, target1)
                 
                 reason = reason_templates.custom_template(tipi = feature_types, features = features, results0 = results0, results1 = results1, 
                         model_type = self.model_type, target = self.beautify(self.outcome), target0 = target0str, target1 = target1str)
-                print(reason)
+                print(reason, '\n')
             print('\n')
 
     def beautify(self, stringa, clothing = 'square brackets'):
