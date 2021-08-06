@@ -8,6 +8,8 @@ from typing import List, Dict
 
 from .colors import color
 
+import re
+
 class ReasonGeneratorBase:
     def __init__(self, continuous_features: List[str], categorical_features: List[str], outcome: str, model_type: str):
         self.model_type = model_type
@@ -42,7 +44,10 @@ class ReasonGeneratorBase:
     
     def format(self, stringa: str, tipo: str):
         if tipo == self.categorical:
-            result = f'{int(float(stringa)):.0f}'
+            try:
+                result = f'{int(float(stringa)):.0f}'
+            except:
+                result = stringa
         elif tipo == self.continuous:
             result =  f'{stringa:.3f}'
         return result
@@ -55,11 +60,11 @@ class ReasonGeneratorBase:
         results1 = []
         dictionary_copy = dictionary.copy()
         del dictionary_copy[self.outcome]
-        for feat, vals in dictionary_copy.items():
-            if feat in features_to_include:
-                tipo = self.get_type(feat)
-                results0 += [self.format(vals[key0], tipo)]
-                results1 += [self.format(vals[key1], tipo)]
+        for feat in features_to_include:
+            vals = dictionary_copy[feat]
+            tipo = self.get_type(feat)
+            results0 += [self.format(vals[key0], tipo)]
+            results1 += [self.format(vals[key1], tipo)]
             
         return results0, results1
 
@@ -76,7 +81,11 @@ class ReasonGeneratorBase:
     
     def generate_reasons(self, cf_examples_list: List, top_features_per_instance_list: List[Dict], threshold_importance: float = 0.3, result0: str = 'result0', result1: str = 'result1',
                         target0: str = 'target0', target1: str = 'target1', verbose = True):
+
+        all_reasons = []
+
         for i, cf_example in enumerate(cf_examples_list):
+            all_reasons += [[]]
             if verbose:
                 print(color.RED + color.BOLD + f'For query number {i}:' + color.END, '\n')
             keys_important, _ = self.order_top_features(top_features_per_instance_list[i], threshold_importance)
@@ -102,11 +111,14 @@ class ReasonGeneratorBase:
                 
                 target0str = self.access_dict(dictionary, self.outcome, target0)
                 target1str = self.access_dict(dictionary, self.outcome, target1)
-                
+
                 reason = reason_templates.custom_template(tipi = feature_types, features = features, results0 = results0, results1 = results1, 
                         model_type = self.model_type, target = self.beautify(self.outcome), target0 = target0str, target1 = target1str)
                 print(reason, '\n')
+                all_reasons[i] += [reason]
             print('\n')
+
+        return all_reasons
 
     def beautify(self, stringa, clothing = 'square brackets'):
         if clothing == 'square brackets':
@@ -119,6 +131,10 @@ class ReasonGeneratorBase:
             new_cfs_changes[index][col] = {'result0': old, 'result1': new}
         '''
         pass
+
+
+    def modify(self, s):
+        return re.sub("(^|[.?!])\s*([a-zA-Z])", lambda p: p.group(0).upper(), s)
         
 
 
