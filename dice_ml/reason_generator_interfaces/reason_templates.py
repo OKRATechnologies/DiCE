@@ -73,10 +73,10 @@ def custom_template(tipi: List[str], features: List[str], results0: List[str], r
          str: reason 
     """
     N = len(tipi)
-    stringa = ' and '
+    stringa = 'and '
     Nand = len(stringa)
     feature_phrases = [custom_behaviour_template(tipo = tipi[i], feature = features[i], result0 = results0[i], result1 = results1[i]) for i in range(N)]
-    feature_phrase =  ''.join(f'{phrase_feat}\n{stringa}' for phrase_feat in feature_phrases)
+    feature_phrase =  ''.join(f' {phrase_feat}\n{stringa}' for phrase_feat in feature_phrases)
     feature_phrase = feature_phrase[:-Nand]
     model_phrase = custom_model_template(model_type = model_type, target = target, result0 = target0, result1 = target1)
 
