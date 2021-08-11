@@ -11,7 +11,27 @@ from .colors import color
 import re
 
 class ReasonGeneratorBase:
+
+    '''
+
+    ...
+
+    Methods
+    ------
+
+
+    '''
+
     def __init__(self, continuous_features: List[str], categorical_features: List[str], outcome: str, model_type: str):
+        '''
+        Parameters
+        ------
+        
+
+        Returns
+        ------
+        
+        '''
         self.model_type = model_type
         self.continuous_features = continuous_features
         self.categorical_features = categorical_features
@@ -68,18 +88,39 @@ class ReasonGeneratorBase:
             
         return results0, results1
 
-    def order_top_features(self, top_features_per_instance: Dict, threshold_importance: float):
+    def order_top_features(self, top_features_per_instance: Dict, threshold_importance: float, max_number_of_features: int):
         new = {}
         for k, v in top_features_per_instance.items():
             if v > threshold_importance:
                 new[k] = v
         sorted_dict = dict(sorted(new.items(), key = lambda item: item[1]))
+        
         keys = list(sorted_dict.keys())
-        values = list(sorted_dict.values())
+
+        N = min(max_number_of_features, len(keys))
+
+        keys = keys[:N]
+        values = list(sorted_dict.values())[:N]
         return keys, values
 
-    
-    def generate_reasons(self, cf_examples_list: List, top_features_per_instance_list: List[Dict], threshold_importance: float = 0.3, result0: str = 'result0', result1: str = 'result1',
+
+    def compare_local_to_global(self, local_importance: Dict, global_importance: Dict, smaller: bool = True, ignore_global: bool = False):
+        '''
+        For each example, compares local and global importance, and it selects the smaller one if smaller = True
+        If ignore_global = True, then it just returns local_importance
+        '''
+        if  ignore_global:
+            new = local_importance
+        else:
+            new = {}
+            for k in local_importance.keys():
+                l, g = local_importance[k], global_importance[k]
+                new[k] = min(l, g) if smaller else max(l, g)
+        return new
+
+    def generate_reasons(self, cf_examples_list: List, top_features_per_instance_list: List[Dict], global_importance: Dict, 
+                        threshold_importance: float = 0.3, smaller: bool = True, ignore_global: bool = False, max_number_of_features: int = 5,
+                        result0: str = 'result0', result1: str = 'result1',
                         target0: str = 'target0', target1: str = 'target1', verbose = True):
 
         all_reasons = []
@@ -88,7 +129,11 @@ class ReasonGeneratorBase:
             all_reasons += [[]]
             if verbose:
                 print(color.RED + color.BOLD + f'For query number {i}:' + color.END, '\n')
-            keys_important, _ = self.order_top_features(top_features_per_instance_list[i], threshold_importance)
+            print(top_features_per_instance_list[i], global_importance)
+    
+            top_features_per_instance_list_compared_to_global = self.compare_local_to_global(top_features_per_instance_list[i], global_importance, smaller, ignore_global)
+            print(top_features_per_instance_list_compared_to_global)
+            keys_important, _ = self.order_top_features(top_features_per_instance_list_compared_to_global, threshold_importance, max_number_of_features)
             if len(keys_important)>0:
                 print(f'Most important features with threshold of {threshold_importance}: {keys_important}')
             else:
@@ -139,6 +184,15 @@ class ReasonGeneratorBase:
 
 
 class ReasonGenerator(ReasonGeneratorBase):
+    '''
+
+    ...
+
+    Methods
+    ------
+
+    
+    '''
     def __init__(self, exp: Dice):
         super().__init__(continuous_features = exp.data_interface.continuous_feature_names, 
                          categorical_features = exp.data_interface.categorical_feature_names,
