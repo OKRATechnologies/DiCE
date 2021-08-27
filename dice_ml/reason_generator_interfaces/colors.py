@@ -1,3 +1,8 @@
+'''
+This class contains color codes to be used in the reason generated text.
+'''
+
+
 # from https://stackoverflow.com/questions/8924173/how-do-i-print-bold-text-in-python
 class color:
    PURPLE = '\033[95m'

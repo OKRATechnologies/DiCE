@@ -1,8 +1,53 @@
+'''
+This class filters the results of the counterfactual generation, based on tabu changes. 
+'''
+
 from dice_ml.counterfactual_explanations import CounterfactualExplanations
+
+from dice_ml.reason_generator_interfaces import colors
+
+from typing import List, Dict
 
 
 class FilterChanges:
-    def __init__(self, tabu_changes):
+    '''
+    This class takes care of the filtering of counterfactuals results.
+    
+    ...
+
+    Methods
+    ------
+    is_feasible_category
+        Returns a bool representing wether a categorical change is in tabu changes or not
+    is_feasible_continuous
+        Returns a bool representing wether a continuous change is in tabu changes or not
+    is_feasible
+        Returns a bool representing wether a change is in tabu changes or not
+    is_feasible_couple
+        Returns a bool representing wether the two changes at the same time for two different variables are in tabu changes or not
+    _get_change_cont
+        helper function to check if the change is for a continuous or categorical variable
+    filter_changes_single
+        Loops over all the changes for each counterfactual: if a single change in a given counterfactual is not feasible, the counterfactual is excluded
+    filter_changes_couple
+        Loops over all the changes for each counterfactual: if a couple change in a given counterfactual is not feasible, the counterfactual is excluded
+    filter_changes
+        Loops over all the changes for each counterfactual: if a single or couple change in a given counterfactual is not feasible, the counterfactual is excluded
+    filtered_cf_list
+        Given a list of counterfactuals, returns the list of feasible counterfactuals 
+    changed_from_counterfactual
+        Check changes with the original instance
+    compare_lists
+        Compares lists of features for a given example with respect to original instance
+
+    '''
+    def __init__(self, tabu_changes: List):
+        '''
+        Parameters
+        ------
+        tabu_changes: List
+            List of prohibited changes in the counterfactuals, with respect to the original instance
+        '''
         self.tabu_changes = tabu_changes
         
         self.coupled_features = []
@@ -10,7 +55,24 @@ class FilterChanges:
             if type(k) is tuple:
                 self.coupled_features += [k]
     
-    def is_feasible_category(self, feature, change, tabu_changes):
+    def is_feasible_category(self, feature: str, change: tuple, tabu_changes: List) -> bool:
+        '''
+        Returns a bool representing wether a categorical change is in tabu changes or not
+
+        Parameters
+        ------
+        feature: str
+            Name of the given categorical feature
+        change: tuple
+            The change for the specific counterfactual
+        tabu_changes: List
+            All the prohibited changes
+
+        Returns
+        ------
+        bool
+            if the change is feasible or not
+        '''
         if feature not in tabu_changes.keys():
             return True
         else:
@@ -19,7 +81,21 @@ class FilterChanges:
             else:
                 return True
             
-    def is_feasible_continuous(self, feature, change, tabu_changes):
+    def is_feasible_continuous(self, feature: str, change: float, tabu_changes: List) -> bool:
+        '''
+        Parameters
+        ------
+        feature: str
+
+        change: float
+
+        tabu_changes: List
+
+        Returns
+        ------
+        bool
+            if the change is feasible or not
+        '''
         if feature not in tabu_changes.keys():
             return True
         else:
@@ -28,7 +104,19 @@ class FilterChanges:
             else:
                 return True
             
-    def is_feasible(self, feature, change, continuous = False, tabu_changes = None):
+    def is_feasible(self, feature: str, change, continuous: bool = False, tabu_changes: List = None) -> bool:
+        '''
+        Returns a bool representing wether a continuous change is in tabu changes or not
+
+        Parameters
+        ------
+        tabu_changes: List
+
+        Returns
+        ------
+        bool
+            if the change is feasible or not
+        '''
         if tabu_changes is None:
             tabu_changes = self.tabu_changes
         if continuous:
@@ -37,7 +125,19 @@ class FilterChanges:
             result = self.is_feasible_category(feature, change, tabu_changes)
         return result
     
-    def is_feasible_couple(self, feature_couple, change_couple, cont_couple):
+    def is_feasible_couple(self, feature_couple: tuple, change_couple, cont_couple):
+        '''
+        Parameters
+        ------
+        feature_couple: tuple
+        change_couple
+        cont_couple
+
+        Returns
+        ------
+        bool
+            if the change is feasible or not
+        '''
         #I already know feature_couple is in tabu_changes
         
         tabu_change_couple = self.tabu_changes[feature_couple]
@@ -55,7 +155,21 @@ class FilterChanges:
         return bool(is_feasible)
     
     
-    def _get_change_cont(self, o, n, tipo):
+    def _get_change_cont(self, o, n, tipo: str) -> tuple:
+        '''
+        Parameters
+        ------
+        o: Any
+            old value
+        n: Any
+            new value
+        tipo: str
+
+        Returns
+        ------
+        tuple
+            the change, and its type
+        '''
         if tipo == 'category' or tipo == 'object':
                 temp = [o, n]
                 continuous = False
@@ -65,7 +179,15 @@ class FilterChanges:
         return temp, continuous
     
     
-    def filter_changes_single(self, changes):
+    def filter_changes_single(self, changes: Dict) -> bool:
+        '''
+        Parameters
+        ------
+        changes: List
+
+        Returns
+        ------
+        '''
         
         doable = True
         
@@ -81,7 +203,15 @@ class FilterChanges:
         return doable
     
     
-    def filter_changes_couple(self, changes):
+    def filter_changes_couple(self, changes: Dict) -> bool:
+        '''
+        Parameters
+        ------
+        changes: Dict
+
+        Returns
+        ------
+        '''
         
         doable = True
         
@@ -103,6 +233,15 @@ class FilterChanges:
         
             
     def filter_changes(self, changes):
+        '''
+        Parameters
+        ------
+        tabu_changes: List
+
+        Returns
+        ------
+
+        '''
         
         #Single features only
         doable1 = self.filter_changes_single(changes)
@@ -116,7 +255,15 @@ class FilterChanges:
             
         return doable
 
-    def filtered_cf_list(self, cf_examples_list):
+    def filtered_cf_list(self, cf_examples_list: List):
+        '''
+        Parameters
+        ------
+        tabu_changes: List
+
+        Returns
+        ------
+        '''
 
         #if cf_example.final_cfs_df_sparse is not None:
         #    new_cfs = cf_example.final_cfs_df_sparse
@@ -147,7 +294,7 @@ class FilterChanges:
 
         excluded = total_CFs-min_number_ok_cfs
 
-        print(f'Number of excluded counterfactuals is {excluded}')
+        print(colors.color.RED + colors.color.BOLD + f'Number of excluded counterfactuals is {excluded}' + colors.color.END, '\n')
             
         for i, _ in enumerate(lista):
             cf_examples_list[i].final_cfs_df = cf_examples_list[i].final_cfs_df.truncate(after = min_number_ok_cfs-1, axis = 0)
@@ -157,7 +304,15 @@ class FilterChanges:
 
         return  cf_examples_list
 
-    def changed_from_counterfactual(self, cf_examples_list):
+    def changed_from_counterfactual(self, cf_examples_list: List):
+        '''
+        Parameters
+        ------
+        tabu_changes: List
+
+        Returns
+        ------
+        '''
         
         results = []
         for example in cf_examples_list:
@@ -183,6 +338,8 @@ class FilterChanges:
 
         The dictionary is in the form of changed[key] = (original_value, new_value, type of feature)
 
+        Returns
+        ------
         '''
 
         changed = {}

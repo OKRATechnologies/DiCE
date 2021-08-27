@@ -125,26 +125,37 @@ class ReasonGeneratorBase:
 
         all_reasons = []
 
+        text = ''
+
         for i, cf_example in enumerate(cf_examples_list):
             all_reasons += [[]]
             if verbose:
-                print(color.RED + color.BOLD + f'For query number {i}:' + color.END, '\n')
-            print(top_features_per_instance_list[i], global_importance)
-    
-            top_features_per_instance_list_compared_to_global = self.compare_local_to_global(top_features_per_instance_list[i], global_importance, smaller, ignore_global)
-            print(top_features_per_instance_list_compared_to_global)
-            keys_important, _ = self.order_top_features(top_features_per_instance_list_compared_to_global, threshold_importance, max_number_of_features)
-            if len(keys_important)>0:
-                print(f'Most important features with threshold of {threshold_importance}: {keys_important}')
-            else:
-                print(f'No feature with threshold of at least {threshold_importance}')
+                testo = color.RED + color.BOLD + f'For query number {i}:' + color.END + '\n'
+                text = text+testo
+                print(testo)
 
-            print('\n')
+            #print(top_features_per_instance_list[i], global_importance)
+            
+            top_features_per_instance_list_compared_to_global = self.compare_local_to_global(top_features_per_instance_list[i], global_importance, smaller, ignore_global)
+
+            #print(top_features_per_instance_list_compared_to_global)
+            
+            keys_important, _ = self.order_top_features(top_features_per_instance_list_compared_to_global, threshold_importance, max_number_of_features)
+            
+            if len(keys_important)>0:
+                testo = f'Most important features with threshold of {threshold_importance}: {keys_important}'
+            else:
+                testo = f'No feature with threshold of at least {threshold_importance}'
+                
+            print(testo+'\n')
+            text = text+testo+'\n'
 
             changes_list = self.check_changes(cf_example)
             for j, dictionary in enumerate(changes_list):
                 if verbose:
-                    print(color.BOLD + f'Counterfactual number {j} of query {i}:' + color.END)
+                    testo = color.BOLD + f'Counterfactual number {j} of query {i}:' + color.END
+                    print(testo)
+                    text = text+testo
                 #If no local importance above threshold, just show all of the changes
                 features = list(set(list(dictionary.keys()) ) & set(keys_important)) if len(keys_important)>0 else list(dictionary.keys())
 
@@ -160,10 +171,13 @@ class ReasonGeneratorBase:
                 reason = reason_templates.custom_template(tipi = feature_types, features = features, results0 = results0, results1 = results1, 
                         model_type = self.model_type, target = self.beautify(self.outcome), target0 = target0str, target1 = target1str)
                 print(reason, '\n')
+                text = text+reason
                 all_reasons[i] += [reason]
             print('\n')
 
-        return all_reasons
+            text = text+'\n'
+
+        return text, all_reasons
 
     def beautify(self, stringa, clothing = 'square brackets'):
         if clothing == 'square brackets':
